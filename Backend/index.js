@@ -1,63 +1,93 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const { use } = require('react');
+const bodyParser =  require('body-parser');
+const mysql = require('mysql2/promise'); 
 const app = express();
-const port = 8000;
 
 app.use(bodyParser.json());
 
-let users = [];
-let counter = 1;
+const port = 8000;
 
-app.get('/test', (req, res) => {
-    res.json(user);
-});
-
-app.post('/user', (req,res) => {
-    let user = req.body;
-    user.id = counter
-    counter += 1;
-    users.push(user);
-    res.json({
-    message: 'User added successfully',
-    user: user
+let conn = null;
+const initMySQL = async () => {
+    conn = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'root',
+        database: 'webdb',
+        port: 8700
     });
+    console.log('connected to MySQL database');
+}
+
+app.get('/users',async (req,res) => {
+    const results = await conn.query('SELECT * FORM users');
+    res.json(results[0]);
 });
 
-app.patch('/user/:id',(req,res) => {
-    let id = req.params.id;
-    let updateUser = req.body;
-    let selectedIndex = users.findIndex(user => user.id == id);
-    
-    users[selectedIndex].firstname = updateUser.firstname || users[selectedIndex].firstname;
-    users[selectedIndex].lastname = updateUser.lastname || users[selectedIndex].lastname;
-
-    if(updateUser.firstname) {
-        users[selectedIndex].firstname = updateUser.firstname;
+app.post('/users', async (req, res) =>{
+    try{
+        let user = req.body;
+        const results = await conn.query('INSERT INTO users SET ?', user);
+        console.log('results:', results);
+        res.json({
+            message: 'User added successfully',
+            data: results[0]
+        });
+    } catch(error) {
+        console.error('Error inserting user:',error);
+        res.status(500).json({message: 'Error adding user'});
     }
-    if (updateUser.lastname) {
-        users[selectedIndex].lastname = updateUser.lastname;
-    }
+})
 
-    res.json({
-        message: 'User updated successfully',
-        data:{
-            user: updateUser,
-            indexUpdate: selectedIndex
+app.get('/users/:id',async (req,res) => {
+    try {
+        let id = req.params.id;
+        const results = await conn.query('SELECT * FORM users WHERE id = ?',id);
+        if(results[0].length === 0) {
+            throw { statusCode: 404, message: 'User not found'};
         }
-    })
+        res.json(results[0][0])
+    } catch(error) {
+        console.error('Error fetching user:',error);
+        let statusCode = error.statusCode ||500;
+        res.status(statusCode).json({
+            message: error.message || 'Error fetching user'
+        });
+    }
 })
 
-app.delete('/user/:id', (req,res) => {
-    let id = req.params.id;
-    let selectedIndex = users.findIndex(user => user.id == id);
-    user.splice(selectedIndex, 1);
-    res.json({
-        message: 'User deleted successfully',
-        indexDelete: selectedIndex
-    })
+app.put('/users/:id', async (req,res) => {
+    try{
+        let id = req.params.id;
+        let updateUser = req.body;
+        const results = await conn.query('UPDATE users SET ? EHERE id = ?', [updateUser, id]);
+        res.json({
+            message: 'User updated successfully',
+            data: results[0]
+        });
+    } catch(error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({message: 'Error updating user'});
+    }
 })
 
-app.listen(port, () => {
+
+
+app.listen(port, async () => {
+    await initMySQL();
     console.log(`Server is running on http://localhost:${port}`);
 });
+
+app.delete('/users/:id', async (req, res) => {
+    try{
+        let id = req.params.id;
+        const results = await conn.query('DELETE FORM users WHERE id = ?', id);
+        res.json({
+            message: 'User deleted successfully',
+            data: results[0]
+        })
+    } catch (error) {
+        console.error('Error deleting user:',error);
+        res.status(500).json({message: 'Error deleting user'});
+    }
+})
