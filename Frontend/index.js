@@ -1,24 +1,25 @@
+
 const validateData = (userData) => {
-    let error = [];
-    if (!userData.firstName){
-        error.push('กรุณากรอกชื่อ');
+    let errors = [];
+    if (!userData.firstName) {
+        errors.push('กรุณากรอกชื่อ');
     }
-    if (!userData.lastName){
-        error.push('กรุณากรอกนามสกุล');
+    if (!userData.lastName) {
+        errors.push('กรุณากรอกนามสกุล');
     }
-    if (!userData.age){
-        error.push('กรุณากรอกอายุ');
+    if (!userData.age) {
+        errors.push('กรุณากรอกอายุ');
     }
-    if (!userData.gender){
-        error.push('กรุณาเลือกเพศ');
+    if (!userData.gender) {
+        errors.push('กรุณาเลือกเพศ');
     }
-    if (!userData.interests){
-        error.push('กรุณาเลือกงานอดิเรก');
+    if (!userData.interests) {
+        errors.push('กรุณาเลือกงานอดิเรก');
     }
-    if (!userData.description){
-        error.push('กรุณากรอกคำอธิบาย');
+    if (!userData.description) {
+        errors.push('กรุณากรอกคำอธิบาย');
     }
-    return error;
+    return errors;
 }
 
 const submitData = async () => {
@@ -29,7 +30,7 @@ const submitData = async () => {
     let interestDOMs = document.querySelectorAll('input[name=interests]:checked') || {};
     let descriptionDOM = document.querySelector('textarea[name=description]');
 
-    let messageDOM = document.getElementById('message');
+    let messageDOM = document.getElementById('message')
     try {
         let interest = ''
         for (let i = 0; i < interestDOMs.length; i++) {
@@ -51,9 +52,9 @@ const submitData = async () => {
 
         const errors = validateData(userData);
         if (errors.length > 0) {
-            throw{
-                message: 'กรอกข้อมูลให่ครบถ้วน',
-                error: errors
+            throw {
+                message: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+                errors: errors
             }
         }
 
@@ -63,23 +64,25 @@ const submitData = async () => {
         messageDOM.className = 'message success';
     } catch (error) {
         console.log('error message', error.message);
-        console.log('error', error.error);
-        //if (error.response) {
-        //    console.log('Error response', error.response.data.message);
-        //}
+        console.log('error', error.errors);
+
+        if (error.response) {
+            console.log('Error response:', error.response);
+            error.message = error.response.data.message
+            error.errors = error.response.data.errors
+        }
+
         let htmlData = '<div>'
-        htmlData += `<div>'${error.message}'</div>`;
+        htmlData += `<div>${error.message}</div>`;
         htmlData += '<ul>';
-        for (let i = 0; i < error.error.length; i++) {
-            htmlData += `<li>${error.error[i]}</li>`;
+        for (let i = 0; i < error.errors.length; i++) {
+            htmlData += `<li>${error.errors[i]}</li>`;
         }
         htmlData += '</ul>';
         htmlData += '</div>';
 
-        //messageDOM.innerText = 'เกิดข้อผิดพลาดในการบันทึกข้อมูล';
+
         messageDOM.innerHTML = htmlData;
         messageDOM.className = 'message danger';
     }
-    /**console.log('submitData', userData);
-    console.log('response', response)*/
 }
